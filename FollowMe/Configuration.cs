@@ -4,6 +4,6 @@ namespace FollowMe;
 
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
-    public float FollowDistance { get; set; } = 2.5f;
+    public int Version { get; set; } = 2;
+    public float FollowDistance { get; set; } = 0.1f;
 }
