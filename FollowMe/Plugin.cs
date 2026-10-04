@@ -35,6 +35,15 @@ public sealed class Plugin : IDalamudPlugin
     {
         config = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
+        // v2 changes the default from a polite trailing distance to near-zero so
+        // the player stays essentially on top of the followed NPC.
+        if (config.Version < 2)
+        {
+            config.Version = 2;
+            config.FollowDistance = 0.1f;
+            PluginInterface.SavePluginConfig(config);
+        }
+
         navIsReady = PluginInterface.GetIpcSubscriber<bool>("vnavmesh.Nav.IsReady");
         moveCloseTo = PluginInterface.GetIpcSubscriber<Vector3, bool, float, bool>("vnavmesh.SimpleMove.PathfindAndMoveCloseTo");
         pathStop = PluginInterface.GetIpcSubscriber<object>("vnavmesh.Path.Stop");
@@ -97,7 +106,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void SetDistance(float distance)
     {
-        config.FollowDistance = Math.Clamp(distance, 1.0f, 15.0f);
+        config.FollowDistance = Math.Clamp(distance, 0.0f, 15.0f);
         PluginInterface.SavePluginConfig(config);
         ChatGui.Print($"[Follow Me] Follow distance set to {config.FollowDistance:0.0} yalms.");
     }
@@ -172,7 +181,7 @@ public sealed class Plugin : IDalamudPlugin
 
         var distance = Vector3.Distance(localPlayer.Position, target.Position);
 
-        if (distance <= config.FollowDistance + 0.35f)
+        if (distance <= config.FollowDistance + 0.10f)
         {
             TryStopPath();
             return;
@@ -180,8 +189,8 @@ public sealed class Plugin : IDalamudPlugin
 
         var now = DateTime.UtcNow;
         var targetMoved = float.IsNaN(lastRequestedPosition.X) ||
-                          Vector3.Distance(lastRequestedPosition, target.Position) >= 0.8f;
-        var enoughTimePassed = (now - lastPathRequestUtc).TotalMilliseconds >= 500;
+                          Vector3.Distance(lastRequestedPosition, target.Position) >= 0.25f;
+        var enoughTimePassed = (now - lastPathRequestUtc).TotalMilliseconds >= 250;
 
         if (!targetMoved || !enoughTimePassed)
             return;
