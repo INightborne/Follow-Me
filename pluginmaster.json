@@ -1,0 +1,18 @@
+[
+  {
+    "Author": "INightborne",
+    "Name": "Follow Me",
+    "InternalName": "FollowMe",
+    "AssemblyVersion": "1.0.0.0",
+    "Description": "Target an overworld NPC and automatically follow it using vnavmesh.",
+    "Punchline": "Target an NPC and follow them around.",
+    "RepoUrl": "https://github.com/INightborne/Follow-Me",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 15,
+    "IsHide": false,
+    "IsTestingExclusive": false,
+    "Tags": ["npc", "follow", "navigation", "vnavmesh"],
+    "DownloadLinkInstall": "https://github.com/INightborne/Follow-Me/releases/latest/download/FollowMe.zip",
+    "DownloadLinkUpdate": "https://github.com/INightborne/Follow-Me/releases/latest/download/FollowMe.zip"
+  }
+]
