@@ -1,0 +1,92 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'FollowMe/**'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download current Dalamud reference assemblies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dalamudDir = Join-Path $env:APPDATA 'XIVLauncher\addon\Hooks\dev'
+          New-Item -ItemType Directory -Force -Path $dalamudDir | Out-Null
+
+          $info = $null
+          foreach ($track in @('release', 'stg')) {
+            try {
+              $candidate = Invoke-RestMethod -Uri "https://kamori.goats.dev/Dalamud/Release/VersionInfo?track=$track" -TimeoutSec 30
+              if ($candidate.isApplicableForCurrentGameVer -and $candidate.downloadUrl) {
+                $info = $candidate
+                break
+              }
+            } catch {}
+          }
+
+          if (-not $info) { throw 'Could not find a Dalamud build applicable to the current game version.' }
+
+          $api = ($info.assemblyVersion -split '[.\-]')[0]
+          if ($api -ne '15') { throw "Current Dalamud API is $api, but Follow Me targets API 15." }
+
+          $zip = Join-Path $env:RUNNER_TEMP 'dalamud.zip'
+          Invoke-WebRequest -Uri $info.downloadUrl -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $dalamudDir -Force
+          "DALAMUD_HOME=$dalamudDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Restore
+        run: dotnet restore FollowMe/FollowMe.csproj
+
+      - name: Build
+        run: dotnet build FollowMe/FollowMe.csproj -c Release --no-restore
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+
+          $sdkZip = Get-ChildItem -Path 'FollowMe/bin' -Recurse -Filter 'latest.zip' -File |
+                    Sort-Object LastWriteTime -Descending |
+                    Select-Object -First 1
+
+          if (-not $sdkZip) {
+            throw 'Dalamud.NET.Sdk did not produce latest.zip.'
+          }
+
+          Copy-Item $sdkZip.FullName 'artifacts/FollowMe.zip' -Force
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FollowMe
+          path: artifacts/FollowMe.zip
+
+      - name: Publish release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0.0
+          name: Follow Me 1.0.0.0
+          files: artifacts/FollowMe.zip
+          draft: false
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
