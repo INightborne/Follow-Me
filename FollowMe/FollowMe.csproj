@@ -1,0 +1,15 @@
+<Project Sdk="Dalamud.NET.Sdk/15.0.0">
+  <PropertyGroup>
+    <Version>1.0.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Author>INightborne</Author>
+    <Name>Follow Me</Name>
+    <Punchline>Target an NPC and follow them around.</Punchline>
+    <Description>Follow a selected overworld NPC using vnavmesh pathfinding. Use /followme to start or stop following your current target.</Description>
+    <RepoUrl>https://github.com/INightborne/Follow-Me</RepoUrl>
+    <Tags>npc;follow;navigation;vnavmesh</Tags>
+  </PropertyGroup>
+</Project>
