@@ -7,7 +7,7 @@
     "Description": "Target an overworld NPC and automatically follow it using vnavmesh.",
     "Punchline": "Target an NPC and follow them around.",
     "RepoUrl": "https://github.com/INightborne/Follow-Me",
-    "IconUrl": "https://raw.githubusercontent.com/INightborne/Follow-Me/main/images/icon.png?v=1002",
+    "IconUrl": "https://raw.githubusercontent.com/INightborne/Follow-Me/main/images/icon-v1003.png",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 15,
     "IsHide": false,
