@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Bindings.ImGui;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -18,6 +19,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] private static IObjectTable ObjectTable { get; set; } = null!;
     [PluginService] private static IChatGui ChatGui { get; set; } = null!;
     [PluginService] private static IPluginLog Log { get; set; } = null!;
+    [PluginService] private static IGameGui GameGui { get; set; } = null!;
 
     private readonly Configuration config;
 
@@ -54,11 +56,13 @@ public sealed class Plugin : IDalamudPlugin
         });
 
         Framework.Update += OnFrameworkUpdate;
+        PluginInterface.UiBuilder.Draw += OnUiDraw;
     }
 
     public void Dispose()
     {
         Framework.Update -= OnFrameworkUpdate;
+        PluginInterface.UiBuilder.Draw -= OnUiDraw;
         CommandManager.RemoveHandler("/followme");
         StopFollowing(false);
     }
@@ -214,6 +218,53 @@ public sealed class Plugin : IDalamudPlugin
         {
             Log.Warning(ex, "vnavmesh follow update failed.");
         }
+    }
+
+
+    private void OnUiDraw()
+    {
+        if (!following)
+            return;
+
+        var target = ObjectTable.SearchById(followedObjectId);
+        if (target == null)
+            return;
+
+        // Draw a glowing crystal a little above the followed NPC's head.
+        var worldPos = target.Position + new Vector3(0f, 2.5f, 0f);
+        if (!GameGui.WorldToScreen(worldPos, out var center))
+            return;
+
+        DrawCrystal(center);
+    }
+
+    private static void DrawCrystal(Vector2 center)
+    {
+        var draw = ImGui.GetForegroundDrawList();
+
+        const float width = 22f;
+        const float height = 34f;
+
+        var top = new Vector2(center.X, center.Y - height);
+        var right = new Vector2(center.X + width * 0.5f, center.Y - height * 0.45f);
+        var bottom = new Vector2(center.X, center.Y);
+        var left = new Vector2(center.X - width * 0.5f, center.Y - height * 0.45f);
+
+        var glow = ImGui.ColorConvertFloat4ToU32(new Vector4(0.20f, 0.75f, 1.00f, 0.20f));
+        var fill = ImGui.ColorConvertFloat4ToU32(new Vector4(0.45f, 0.90f, 1.00f, 0.92f));
+        var edge = ImGui.ColorConvertFloat4ToU32(new Vector4(0.85f, 0.98f, 1.00f, 1.00f));
+        var core = ImGui.ColorConvertFloat4ToU32(new Vector4(1.00f, 1.00f, 1.00f, 0.78f));
+
+        draw.AddCircleFilled(new Vector2(center.X, center.Y - height * 0.5f), 22f, glow);
+        draw.AddQuadFilled(top, right, bottom, left, fill);
+        draw.AddQuad(top, right, bottom, left, edge, 2.0f);
+
+        draw.AddLine(top, bottom, core, 1.5f);
+        draw.AddLine(left, right, core, 1.5f);
+
+        draw.AddCircleFilled(new Vector2(center.X - 15f, center.Y - 25f), 2.0f, edge);
+        draw.AddCircleFilled(new Vector2(center.X + 16f, center.Y - 17f), 1.7f, edge);
+        draw.AddCircleFilled(new Vector2(center.X + 11f, center.Y - 35f), 1.4f, edge);
     }
 
     private void TryStopPath()
